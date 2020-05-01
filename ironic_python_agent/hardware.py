@@ -433,7 +433,7 @@ class HardwareManager(object):
             return {}
 
         info = node.get('driver_internal_info', {})
-        max_pool_size = info.get('disk_erasure_concurrency', 1)
+        max_pool_size = info.get('disk_erasure_concurrency', 32)
 
         thread_pool = ThreadPool(min(max_pool_size, len(block_devices)))
         for block_device in block_devices:
