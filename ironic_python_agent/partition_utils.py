@@ -25,6 +25,7 @@ import os
 import shutil
 import stat
 import tempfile
+import time
 
 from ironic_lib import exception
 from ironic_lib import utils
@@ -333,14 +334,28 @@ def work_on_disk(dev, root_mb, swap_mb, ephemeral_mb, ephemeral_format,
             'PReP Boot partition uuid'
         ] = part_dict.get('PReP Boot partition')
 
-    try:
-        for part, part_dev in uuids_to_return.items():
-            if part_dev:
-                uuids_to_return[part] = disk_utils.block_uuid(part_dev)
+    part_devs = {part: part_dev for part, part_dev in uuids_to_return
+                 if part_dev}
 
-    except processutils.ProcessExecutionError:
-        with excutils.save_and_reraise_exception():
-            LOG.error("Failed to detect %s", part)
+    for attempt in range(5):
+        LOG.debug("Waiting 2 seconds before attempting to detect block UUIDs: "
+                  "attempt=%d", attempt+1)
+        time.sleep(2)
+        try:
+            for part, part_dev in part_devs.items():
+                block_uuid = disk_utils.block_uuid(part_dev)
+                if block_uuid:
+                    uuids_to_return[part] = block_uuid
+
+            LOG.debug('uuids_to_return: %s', str(uuids_to_return))
+
+        except processutils.ProcessExecutionError:
+            with excutils.save_and_reraise_exception():
+                LOG.error("Failed to detect %s", part)
+
+        if all([bool(uuids_to_return[part])
+                for part, part_dev in part_devs.items()]):
+            break
 
     return dict(partitions=part_dict, **uuids_to_return)
 
