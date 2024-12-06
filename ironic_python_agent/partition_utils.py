@@ -334,7 +334,7 @@ def work_on_disk(dev, root_mb, swap_mb, ephemeral_mb, ephemeral_format,
             'PReP Boot partition uuid'
         ] = part_dict.get('PReP Boot partition')
 
-    part_devs = {part: part_dev for part, part_dev in uuids_to_return
+    part_devs = {part: part_dev for part, part_dev in uuids_to_return.items()
                  if part_dev}
 
     for attempt in range(5):
